@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"os"
@@ -30,6 +32,38 @@ func (h *handlerServer) SendData(ctx context.Context, req *pb_impl.DataRequest) 
 }
 
 func (h *handlerServer) SendStream(sv pb_impl.DataService_SendStreamServer) error {
+	var data bytes.Buffer
+	for {
+		req, err := sv.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return err
+		}
+		chunk := req.GetData()
+		_, err = data.Write(chunk)
+		if err != nil {
+			log.Println(err)
+		}
+	}
+	
+	f, err := os.Create("end.pdf")
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	defer func() {
+		_ = f.Close()
+	}()
+	
+	_, err = data.WriteTo(f)
+	
+	if err := sv.SendAndClose(&pb_impl.DataResponse{Message: "file uploaded!"}); err != nil {
+		log.Println(err)
+		return err
+	}
+	
 	return nil
 }
 

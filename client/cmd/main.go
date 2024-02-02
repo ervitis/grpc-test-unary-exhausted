@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"io"
 	"log"
@@ -19,12 +20,14 @@ func main() {
 	defer func() {
 		_ = f.Close()
 	}()
-	
-	data, err := io.ReadAll(f)
-	if err != nil {
-		panic(err)
-	}
-	conn, err := grpc.Dial("localhost:8490", grpc.WithTransportCredentials(insecure.NewCredentials()))
+
+	/*
+		data, err := io.ReadAll(f)
+		if err != nil {
+			panic(err)
+		}
+	*/
+	conn, err := grpc.Dial("localhost:8590", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		panic(err)
 	}
@@ -33,9 +36,38 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	r, err := c.SendData(ctx, &pb_impl.DataRequest{Data: data})
+	/*
+		r, err := c.SendData(ctx, &pb_impl.DataRequest{Data: data})
+		if err != nil {
+			log.Println(err)
+		} else {
+			log.Println(r.GetMessage())
+		}
+	*/
+
+	// now try to send it on stream
+	stream, err := c.SendStream(ctx)
 	if err != nil {
 		panic(err)
 	}
-	log.Println(r.GetMessage())
+	reader := bufio.NewReader(f)
+
+	// modify size
+	const size = 4096
+	buff := make([]byte, size)
+
+	for {
+		n, err := reader.Read(buff)
+		if err == io.EOF {
+			break
+		}
+		if err := stream.Send(&pb_impl.DataRequest{Data: buff[:n]}); err != nil {
+			panic(err)
+		}
+	}
+	resp, err := stream.CloseAndRecv()
+	if err != nil {
+		panic(err)
+	}
+	log.Println(resp.GetMessage())
 }
