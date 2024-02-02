@@ -53,7 +53,7 @@ func main() {
 	reader := bufio.NewReader(f)
 
 	// modify size
-	const size = 4096
+	const size = 8192
 	buff := make([]byte, size)
 
 	for {

@@ -36,6 +36,10 @@ func (h *handlerServer) SendStream(sv pb_impl.DataService_SendStreamServer) erro
 	for {
 		req, err := sv.Recv()
 		if err == io.EOF {
+			if err := sv.SendAndClose(&pb_impl.DataResponse{Message: "file uploaded!"}); err != nil {
+				log.Println(err)
+				return err
+			}
 			break
 		}
 		if err != nil {
@@ -58,11 +62,6 @@ func (h *handlerServer) SendStream(sv pb_impl.DataService_SendStreamServer) erro
 	}()
 	
 	_, err = data.WriteTo(f)
-	
-	if err := sv.SendAndClose(&pb_impl.DataResponse{Message: "file uploaded!"}); err != nil {
-		log.Println(err)
-		return err
-	}
 	
 	return nil
 }
