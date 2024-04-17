@@ -2,7 +2,9 @@ syntax = "proto3";
 
 package pb_impl;
 
-option go_package = "pb_impl";
+option go_package = "./pb_impl";
+
+import "google/protobuf/empty.proto";
 
 message DataRequest {
   // string title = 1;
@@ -17,4 +19,12 @@ message DataResponse {
 service DataService {
   rpc SendData(DataRequest) returns (DataResponse);
   rpc SendStream(stream DataRequest) returns (DataResponse);
+}
+
+service NoAuthService {
+  rpc SayHello(google.protobuf.Empty) returns (google.protobuf.Empty);
+}
+
+service AuthService {
+  rpc SayGoodBye(google.protobuf.Empty) returns (google.protobuf.Empty);
 }
