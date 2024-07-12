@@ -23,6 +23,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type DataServiceClient interface {
+	SendBigData(ctx context.Context, in *SendNotificationBatchRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	SendData(ctx context.Context, in *DataRequest, opts ...grpc.CallOption) (*DataResponse, error)
 	SendStream(ctx context.Context, opts ...grpc.CallOption) (DataService_SendStreamClient, error)
 }
@@ -33,6 +34,15 @@ type dataServiceClient struct {
 
 func NewDataServiceClient(cc grpc.ClientConnInterface) DataServiceClient {
 	return &dataServiceClient{cc}
+}
+
+func (c *dataServiceClient) SendBigData(ctx context.Context, in *SendNotificationBatchRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, "/pb_impl.DataService/SendBigData", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *dataServiceClient) SendData(ctx context.Context, in *DataRequest, opts ...grpc.CallOption) (*DataResponse, error) {
@@ -82,6 +92,7 @@ func (x *dataServiceSendStreamClient) CloseAndRecv() (*DataResponse, error) {
 // All implementations should embed UnimplementedDataServiceServer
 // for forward compatibility
 type DataServiceServer interface {
+	SendBigData(context.Context, *SendNotificationBatchRequest) (*emptypb.Empty, error)
 	SendData(context.Context, *DataRequest) (*DataResponse, error)
 	SendStream(DataService_SendStreamServer) error
 }
@@ -90,6 +101,9 @@ type DataServiceServer interface {
 type UnimplementedDataServiceServer struct {
 }
 
+func (UnimplementedDataServiceServer) SendBigData(context.Context, *SendNotificationBatchRequest) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SendBigData not implemented")
+}
 func (UnimplementedDataServiceServer) SendData(context.Context, *DataRequest) (*DataResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SendData not implemented")
 }
@@ -106,6 +120,24 @@ type UnsafeDataServiceServer interface {
 
 func RegisterDataServiceServer(s grpc.ServiceRegistrar, srv DataServiceServer) {
 	s.RegisterService(&DataService_ServiceDesc, srv)
+}
+
+func _DataService_SendBigData_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SendNotificationBatchRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServiceServer).SendBigData(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb_impl.DataService/SendBigData",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServiceServer).SendBigData(ctx, req.(*SendNotificationBatchRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _DataService_SendData_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -159,6 +191,10 @@ var DataService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "pb_impl.DataService",
 	HandlerType: (*DataServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "SendBigData",
+			Handler:    _DataService_SendBigData_Handler,
+		},
 		{
 			MethodName: "SendData",
 			Handler:    _DataService_SendData_Handler,

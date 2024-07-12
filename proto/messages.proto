@@ -12,11 +12,22 @@ message DataRequest {
   bytes data = 1;
 }
 
+message SendNotificationBatchRequest {
+  repeated Personalization personalizations = 1;
+  string                   text             = 2;
+}
+
+message Personalization {
+  string              email         = 1;
+  map<string, string> substitutions = 2;
+}
+
 message DataResponse {
   string message = 1;
 }
 
 service DataService {
+  rpc SendBigData(SendNotificationBatchRequest) returns (google.protobuf.Empty);
   rpc SendData(DataRequest) returns (DataResponse);
   rpc SendStream(stream DataRequest) returns (DataResponse);
 }
